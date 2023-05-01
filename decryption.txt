@@ -1,0 +1,316 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import skimage.io as io
+import time
+from copy import deepcopy
+from PIL import Image
+from IPython import display
+import cv2
+
+
+
+
+
+cipher_lena = io.imread('F:/Thesis/cipher_lena256.png')
+red_channel= deepcopy(cipher_lena)
+green_channel=deepcopy(cipher_lena)
+blue_channel=deepcopy(cipher_lena)
+
+red_channel[:,:,1]=0
+red_channel[:,:,2]=0
+
+green_channel[:,:,0]=0
+green_channel[:,:,2]=0
+
+blue_channel[:,:,0]=0
+blue_channel[:,:,1]=0
+
+fig, ax=plt.subplots(ncols=2,nrows=2)
+
+ax[0,0].imshow(cipher_lena)
+ax[0,0].set_title('original')
+
+
+ax[0,1].imshow(red_channel)
+ax[0,1].set_title('red_channel')
+
+
+ax[1,0].imshow(green_channel)
+ax[1,0].set_title('green_channel')
+
+
+ax[1,1].imshow(blue_channel)
+ax[1,1].set_title('blue_channel')
+
+
+plt.show()
+
+
+
+import numpy as np
+start = time.time()
+# # Create a 3D array of shape (height, width, 3) representing an RGB image
+# image = np.random.randint(0, 256, (100, 100, 3))
+
+# Split the 3D array into separate 2D arrays for each color component
+cipher_red_matrix = cipher_lena[:, :, 0]
+cipher_green_matrix = cipher_lena[:, :, 1]
+cipher_blue_matrix = cipher_lena[:, :, 2]
+
+# Print the matrices
+# print('original')
+# print(cipher_lena)
+# print("Red matrix:")
+# print(cipher_red_matrix)
+
+# print("Green matrix:")
+# print(cipher_green_matrix)
+
+# print("Blue matrix:")
+# print(cipher_blue_matrix)
+
+# print(type(cipher_blue_matrix))
+
+
+
+cipher_red_1D=np.array(cipher_red_matrix).flatten()
+# print(cipher_red_1D)
+
+cipher_green_1D=np.array(cipher_green_matrix).flatten()
+# print(cipher_green_1D)
+
+cipher_blue_1D=np.array(cipher_blue_matrix).flatten()
+# print(cipher_blue_1D)
+
+sizes=len(cipher_red_1D)
+# print(sizes)
+# print(type(cipher_red_1D))
+
+# print('-------------------------')
+# print(max(cipher_blue_1D))
+# print(min(cipher_blue_1D))
+print(cipher_blue_1D.tolist())
+
+
+cipher_red_prime=np.bitwise_xor(cipher_red_1D, cipher_green_1D)
+
+# print('single xored red')
+# print(cipher_red_prime)
+
+
+cipher_green_prime=np.bitwise_xor( cipher_red_1D, cipher_blue_1D)
+# print('single xored green')
+# print(cipher_green_prime)
+
+cipher_blue_prime=np.bitwise_xor( cipher_red_1D, np.bitwise_xor(cipher_green_1D, cipher_blue_1D))
+# print('single xored blue')
+# print(cipher_blue_prime)
+# print(len(cipher_red_prime))
+
+# print(cipher_blue_prime.tolist())
+
+
+def tent_map_mu(x, mu):
+    if x < 0.5:
+        return (4*(9-mu)*x*(1-x))/9 + (2*mu*x)/9
+    else:
+        return (4*(9-mu)*x*(1-x))/9 + (2*mu*(1-x))/9
+    
+
+
+def tent_logistic_system_mu(x_0, mu, n):
+    x = x_0
+    values = []
+    for i in range(L-n):
+        x = tent_map_mu(x, mu)
+        y = int(x * 10**14)% 256
+        values.append(y)
+    return np.array(values)   
+     
+
+# x_0 = 0.1  # initial value
+# mu = 3.8  # parameter value
+# n = 88  # number of iterations
+L=600
+
+
+ 
+
+
+cipher_random_seq_1=tent_logistic_system_mu(0.1,3.8,88)
+print('random seq for red component')
+print(cipher_random_seq_1)
+
+
+cipher_random_seq_2=tent_logistic_system_mu(0.2,4.2,88)
+print('random seq for green component')
+print(cipher_random_seq_2)
+
+
+
+cipher_random_seq_3=tent_logistic_system_mu(0.16,3.1,88)
+print('random seq for blue component')
+print(cipher_random_seq_3)
+
+
+def xor_matrices(seq, comp):
+    result = []
+    num_rows = comp.shape[0]
+    seq_length = len(seq)
+    for i in range(len(comp)):
+        result.append(seq[i%seq_length] ^ comp[i])
+    return result
+
+cipher_red_matrix_main =xor_matrices(cipher_random_seq_1,cipher_red_prime)   
+# print('cipher red matrix main')
+# print(cipher_red_matrix_main )
+
+
+ 
+
+cipher_green_matrix_main =xor_matrices(cipher_random_seq_2,cipher_green_prime) 
+# print('cipher green matrix main')
+# print(cipher_green_matrix_main )
+
+
+
+ 
+cipher_blue_matrix_main =xor_matrices(cipher_random_seq_3,cipher_blue_prime) 
+# print('cipher blue matrix main')
+# print(cipher_blue_matrix_main )
+# print(max(cipher_red_matrix_main))
+
+
+
+ # Convert list to 1D numpy array
+# cipher_arr1 = np.array(cipher_red_matrix_main)
+# cipher_arr2=np.array(cipher_green_matrix_main)
+# cipher_arr3=np.array(cipher_blue_matrix_main)
+
+# Number of rows and columns
+
+
+# Convert 1D array to 2D array
+# arr_2d_red = cipher_arr1.reshape(rows, cols)
+# arr_2d_green= cipher_arr2.reshape(rows,cols)
+# arr_2d_blue=cipher_arr3.reshape(rows,cols)
+
+
+import math
+
+length = len(cipher_red_matrix_main)
+rows = int(math.sqrt(length))
+cols = int(math.sqrt(length))
+arr_2d_red = np.array(cipher_red_matrix_main).reshape(rows, cols)
+arr_2d_green = np.array(cipher_green_matrix_main).reshape(rows, cols)
+arr_2d_blue = np.array(cipher_blue_matrix_main).reshape(rows, cols)
+
+# print(type(arr_2d_blue))
+# print('2d red')
+# print(arr_2d_red)
+# print('2d green')
+# print(arr_2d_green)
+
+# print('2d blue')
+# print(arr_2d_blue)
+# print(arr_2d_blue.tolist())
+
+
+ 
+# Define the chaotic map function
+def piecewise_linear_map(xn, m):
+    if 0 <= xn < m:
+        return xn/m
+    elif m <= xn < 0.5:
+        return (xn-m)/(0.5-m)
+    elif 0.5 < xn < 1-m:
+        return (1-m-xn)/(0.5-m)
+    else:
+        return (1-xn)/m
+
+    
+
+delta_h = (0.9 - 0.1) / 256
+intervals = [0.1 + i * delta_h for i in range(256)]
+intervals.append(0.9)
+
+ 
+
+
+
+
+
+def createSbox(xn, m):
+    S = []
+    while len(S) < 256:
+        xn = piecewise_linear_map(xn, m)
+        for i, interval in enumerate(intervals[:-1]):
+            if interval <= xn < intervals[i+1]:
+                if i not in S:
+                    S.append(i)
+                break
+    return S
+
+    
+print('cipher s box for component')
+cipher_S = createSbox(0.76,0.15)
+# print(cipher_S[125])
+# print(cipher_S)
+
+
+import numpy as np
+
+def reverse_replace(arr2D, arr1D):
+    arr2D = np.array(arr2D)
+    arr1D = np.array(arr1D)
+    arr2D = np.vectorize(lambda x: np.where(arr1D == x)[0][0])(arr2D)
+    return arr2D
+
+cipher_red_matrix_1 = reverse_replace(arr_2d_red, cipher_S)
+cipher_green_matrix_1 = reverse_replace(arr_2d_green, cipher_S)
+cipher_blue_matrix_1 = reverse_replace(arr_2d_blue, cipher_S)
+
+# print(cipher_blue_matrix_1.tolist())
+
+# print('red')
+# print(cipher_red_matrix_1)
+# print('green')
+
+# print(cipher_green_matrix_1)
+# print('blue')
+# print(cipher_blue_matrix_1)
+
+
+
+
+original_image= np.stack([cipher_red_matrix_1, cipher_green_matrix_1, cipher_blue_matrix_1], axis=2)
+print(original_image)
+
+
+
+from PIL import Image
+main_image = Image.fromarray(original_image.astype('uint8'), 'RGB')
+main_image.save("F:\Thesis\decrypted_lena256.png")
+
+
+plt.imshow(main_image)
+plt.show()
+
+
+end = time.time()
+
+total_time = end - start
+
+# Plot time using Matplotlib
+plt.plot([0, 1], [0, total_time], 'r')
+plt.xlabel('Decryption')
+plt.ylabel('Time (seconds)')
+plt.title('Decryption Time')
+plt.show()
+
+
+
+
+
+
+
